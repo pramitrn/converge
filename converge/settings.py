@@ -52,6 +52,16 @@ def parse_rc(rc_config):
     return rc_config
 
 
+def parse_os_env(rc_config):
+    supported_directives = tuple(rc_config.keys())
+    for directive in supported_directives:
+        value = os.environ.get(directive)
+        if directive == 'APP_MODE' and value:
+            validate_mode(value)
+        rc_config[directive] = value   
+    return rc_config
+
+
 def import_settings(name, settings_dir=None, exit_on_err=False):
     name += '_settings'
     path = name + '.py'
@@ -113,9 +123,12 @@ def clone_git_repo(git_url, settings_dir, git_subdir=None):
 
 def main():
     rc_config_default = {'APP_MODE': 'dev', 'SETTINGS_DIR': None,
-                         'GIT_SETTINGS_REPO': None,
-                         'GIT_SETTINGS_SUBDIR': None}
-    rc_config = parse_rc(rc_config_default)
+                            'GIT_SETTINGS_REPO': None,
+                            'GIT_SETTINGS_SUBDIR': None}
+    if os.environ.get('SETTINGS_DIR'):
+        rc_config = parse_os_env(rc_config_default)
+    else:
+        rc_config = parse_rc(rc_config_default)
     settings_dir = rc_config['SETTINGS_DIR']
     git_url = rc_config['GIT_SETTINGS_REPO']
     git_subdir = rc_config['GIT_SETTINGS_SUBDIR']
@@ -127,7 +140,7 @@ def main():
         clone_git_repo(git_url, settings_dir, git_subdir)
 
     for name in ('default', rc_config['APP_MODE'], 'site'):
-        import_settings(name, settings_dir)
+        import_settings(name, settings_dir)            
 
 
 def reload():
